@@ -221,3 +221,20 @@ There are 62 parts in this series. It covers:
 
 - Instead, we will use [Formik](https://github.com/jaredpalmer/formik) for this.
 - Add Formik.
+
+### Part 4 - Form Validation in Formik with Yup
+
+- Install Yup:
+
+  ```sh
+  yarn add yup
+  yarn add -D @types/yup
+  ```
+
+- Coding Yup `validationSchema`.
+- Red color for validation error messages.
+- TSLint rules:
+  - Set `"jsx-no-multiline-js": false`
+- Understanding Formik validation events, the differences/comparison:
+  - `validateOnChange`
+  - `validateOnBlur`
