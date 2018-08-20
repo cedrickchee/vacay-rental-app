@@ -238,3 +238,21 @@ There are 62 parts in this series. It covers:
 - Understanding Formik validation events, the differences/comparison:
   - `validateOnChange`
   - `validateOnBlur`
+
+### Part 5 - Sharing Validation code between the React Web App and GraphQL Server
+
+- Create a new directory `common` inside `packages`
+- Then `cd` into this `common` directory and run `yarn init -y`.
+- Open `package.json` and rename `name: "common"` to `@vacay/common`.
+- Next, install some dependencies we're going to need:
+
+  ```sh
+  yarn add -D typescript@2.9.2 tslint@5.9.1 tslint-config-prettier@1.12.0
+  yarn add yup
+  yarn add -D @types/yup
+
+  yarn build
+  yarn add -D rimraf
+  ```
+
+- That's how you can can share code across.
