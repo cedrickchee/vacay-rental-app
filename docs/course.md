@@ -199,3 +199,25 @@ There are 62 parts in this series. It covers:
   ```
 
 ### Part 3 - Coding React Form with Formik and Ant Design
+
+- What we will be going to do is set up the register page a little more.
+
+#### Ant Design
+
+- Ant Design [use in TypeScript](https://ant.design/docs/react/use-in-typescript).
+- Install and add to our project:
+
+  ```sh
+  yarn add antd
+  ```
+
+#### Form
+
+- Next part we are going to start doing is working on the form.
+- `packages/web/src/modules/register/ui/RegisterView.tsx` Borrow code from [Ant Design form component](https://ant.design/components/form/)
+- We will not use the HOC from Ant Design:
+
+  `const WrappedNormalLoginForm = Form.create()(NormalLoginForm);`
+
+- Instead, we will use [Formik](https://github.com/jaredpalmer/formik) for this.
+- Add Formik.
