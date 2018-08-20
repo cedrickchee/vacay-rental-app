@@ -180,4 +180,22 @@ There are 62 parts in this series. It covers:
 
 ### Part 2 - Adding React Apollo and React Router
 
-- Some notes later
+#### Set Up Apollo
+
+- What I want to do next is go ahead and setup Apollo. Apollo is what we are going to use to make GraphQL requests. And to setup Apollo, they have a "Getting Started" page but they used Apollo Boost for that. Now, we could use Apollo Boost but I think later on we are going to do [subscriptions](https://www.apollographql.com/docs/react/advanced/subscriptions.html) and Apollo Boost does not supports subscriptions right now. What we need to do is install the libraries ourself. So the best guide on that is under the "Basic Migration" under the [Apollo Boost Migration](https://www.apollographql.com/docs/react/advanced/boost-migration.html).
+
+#### Set Up React Router
+
+- [React Router](https://reacttraining.com/react-router/web/example/basic)
+
+  ```sh
+  yarn add react-router-dom
+  ```
+
+- `react-router-dom` does not use TypeScript and they don't supply the types themselves. So what you have to do is that you have to install them yourself:
+
+  ```sh
+  yarn add -D @types/react-router-dom
+  ```
+
+### Part 3 - Coding React Form with Formik and Ant Design
