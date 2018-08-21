@@ -256,3 +256,9 @@ There are 62 parts in this series. It covers:
   ```
 
 - That's how you can can share code across.
+
+### Part 6 - Simplifying a React form with the Formik Field Component
+
+- Cleaning up our form a little bit.
+- Formik `Field` component.
+  - Copy the [code from Formik's `README`](https://github.com/jaredpalmer/formik#field-).
