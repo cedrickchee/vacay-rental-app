@@ -262,3 +262,33 @@ There are 62 parts in this series. It covers:
 - Cleaning up our form a little bit.
 - Formik `Field` component.
   - Copy the [code from Formik's `README`](https://github.com/jaredpalmer/formik#field-).
+
+### Part 7 - Adding a Controller Package to share code between React and React Native
+
+- `RegisterConnector.tsx`:
+
+  ```javascript
+  // controller -> connector -> view
+  ```
+
+  Today's focus is on the Controller.
+
+- Create a new `controller` package directory:
+
+  ```sh
+  mkdir packages/controller
+  ```
+
+- Copy `web/tsconfig.json` and `web/tslint.json` to `controller`.
+- Make a new `src` directory inside `controller`.
+- Create `index.ts` file inside `src` directory. This is going to act exactly like how `common` package works. So, `index.ts` is going to export all the things.
+- Next, install dependencies like React:
+
+  ```sh
+  yarn add react react-dom
+  ```
+
+- Install TypeScript types and more dependencies:
+  ```sh
+  yarn add -D @types/node @types/react @types/react-dom tslint@5.9.1 typescript@2.9.2 tslint-config-prettier@1.12.0 rimraf
+  ```
