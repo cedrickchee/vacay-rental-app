@@ -292,3 +292,60 @@ There are 62 parts in this series. It covers:
   ```sh
   yarn add -D @types/node @types/react @types/react-dom tslint@5.9.1 typescript@2.9.2 tslint-config-prettier@1.12.0 rimraf
   ```
+
+### Part 8 - Calling the Register Mutation
+
+- Today's we are going to be connecting the server and the website.
+- Before we do, we need to get the server in order.
+- Make sure Redis and PostgreSQL database is up and running.
+
+#### Server package
+
+- Fix errors:
+
+  - In `startServer.ts`:
+    - `GraphQLServer` (using `graphql-yoga`) and `genSchema` (using `graphql-tools` package) TypeScript types are in-compatible due to version mismatch.
+  - In `forgotPassword.test.ts`: undefined error in `passwordNotLongEnough`. This problem was because we have moved this into the `common` package.
+
+- Enable sending email:
+  - In `resolvers.ts`, uncomment the `sendEmail` block.
+  - We are using SparkPost service for doing this. So, you want to go sign up and create an account. We will get an API key.
+  - SparkPost:
+    - Their full-featured, free account designed for developers:
+      - Up to 15,000 free messages per month, forever.
+      - Access to all of their powerful API features.
+      - 30 days of free technical support to get you up and running.
+    - Sending your first email
+      - Skip domain setup
+      - How will you send email with us?
+        - [ ] SMTP - set up your own mail server to send through their SMTP relay service
+        - [x] REST API - use their powerful REST API to send email via simple HTTP requests
+- GraphQL server
+
+  - GraphiQL url: http://localhost:4000/
+  - Test register mutation
+
+    ```javascript
+    mutation {
+      register(email: "b6782294@nwytg.net", password: "b6782294@nwytg.net") {
+        path
+        message
+      }
+    }
+
+    // Output:
+    {
+      "data": {
+        "register": null
+      }
+    }
+    ```
+
+  - Next, start working on our website.
+
+    - We want to call that register mutation from our Register controller `packages/controller/src/modules/RegisterController/index.tsx`.
+    - We need to add a few packages. So, open your CLI and `cd` into `packages/controller`.
+
+      ```sh
+      yarn add react-apollo graphql-tag graphql
+      ```
