@@ -349,3 +349,84 @@ There are 62 parts in this series. It covers:
       ```sh
       yarn add react-apollo graphql-tag graphql
       ```
+
+### Part 9 - Generating Typescript Types with Apollo Codegen
+
+- [Apollo CLI, previously known as Apollo Codegen](https://github.com/apollographql/apollo-cli)
+  - Generate static types for GraphQL queries. Can use the published schema in Apollo Engine or a downloaded schema.
+- Install Apollo Codegen:
+  ```sh
+  yarn global add apollo-codegen@0.19.0
+  ```
+- Apollo Codegen introspect schema:
+
+  ```sh
+  cd packages/controller
+  apollo-codegen introspect-schema http://localhost:4000 --output schema.json
+  ```
+
+- Apollo Codegen generate TypeScript types:
+
+  ```sh
+  apollo-codegen generate src/**/*.tsx --schema schema.json --target ts-modern
+
+  .../src/modules/RegisterController/index.tsx: Apollo does not support anonymous operations
+  error: Validation of GraphQL query document failed
+  ```
+
+  To fix the error, edit `controller/src/modules/RegisterController/index.tsx`.
+
+  ```javascript
+  const registerMutation = gql`
+    mutation RegisterMutation($email: String!, $password: String!) {
+      register(email: $email, password: $password) {
+        path
+        message
+      }
+    }
+  `;
+  ```
+
+  Then re-run the command:
+
+  ```sh
+  apollo-codegen generate src/**/*.tsx --schema schema.json --target ts-modern
+  ```
+
+  Notice there's a new folder `__generated__` underneath `RegisterController`. There's now this thing called `RegisterMutation.ts`. Now we can use this. So how `ChildMutateProps` works:
+
+  ```javascript
+  class C extends React.PureComponent<ChildMutateProps<Props, any, any>> {
+    submit = async (values: any) => {
+      // truncated
+    };
+
+    render() {
+      return this.props.children({ submit: this.submit });
+    }
+  }
+  ```
+
+- Add npm scripts for Apollo Codegen:
+
+  ```json
+  // Controller's package.json
+  "scripts": {
+    "introspect": "apollo-codegen introspect-schema http://localhost:4000 --output schema.json",
+    "generate": "apollo-codegen generate src/**/*.tsx --schema schema.json --target ts-modern",
+    "gen-types": "npm run introspect && npm run generate"
+  }
+  ```
+
+  Add `apollo-codegen` as project dependencies:
+
+  ```sh
+  cd packages/controller
+  yarn add -D apollo-codegen@0.19.0
+  ```
+
+  Before we build, we want to make sure the whole `gen-types` flow works.
+
+  ```sh
+  yarn gen-types
+  ```
