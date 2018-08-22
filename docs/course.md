@@ -490,3 +490,381 @@ docker run -p 3001:4000 --net="host" cedrickchee/vacay-rental-app:1.0.0
 ```
 
 [Ways to debug a crashed Docker container](https://medium.com/@pimterry/5-ways-to-debug-an-exploding-docker-container-4f729e2c0aa8).
+
+### Part 11 - Deploying a Typescript Server to Digital Ocean with Dokku
+
+We are going to take the Docker image that we build previously and deploy it to DigitalOcean using [Dokku](http://dokku.viewdocs.io/dokku/).
+
+Once we have set up Dokku, connect to it using SSH:
+
+```sh
+ssh -XC -i <rsa_keypair.pem> ubuntu@<server_ip_address>
+X11 forwarding request failed on channel 0
+... ... ...
+... ... ...
+Connection to 52.42.6.202 closed.
+```
+
+#### Dokku Web GUI Installer
+
+Dokku host URL: http://<subdomain.somedomain.com>/
+
+- Dokku Setup v0.12.11
+  - Admin Access
+    - Public Key: <rsa_keypair>
+  - HOSTNAME CONFIGURATION
+    - Hostname: <subdomain.somedomain.com>
+  - [x] Use virtualhost naming for apps
+  - Your app URLs will look like: http://<app-name>.<subdomain.somedomain.com>
+
+Next, [deploy to Dokku](http://dokku.viewdocs.io/dokku~v0.12.11/deployment/application-deployment/).
+
+#### Create the app
+
+Create the application on the Dokku host. You will need to SSH onto the host to run this command.
+
+```sh
+# on the Dokku host
+dokku apps:create vacay
+```
+
+#### Create the backing services:
+
+- When you create a new app, Dokku by default does not provide any datastores such as PostgreSQL. You will need to install plugins to handle that, but fortunately [Dokku has official plugins](http://dokku.viewdocs.io/dokku~v0.12.11/community/plugins/#official-plugins-beta) for common datastores. Our app requires a PostgreSQL service:
+
+```sh
+# on the Dokku host
+# install the postgres plugin
+# plugin installation requires root, hence the user change
+sudo dokku plugin:install https://github.com/dokku/dokku-postgres.git postgres
+
+-----> Cloning plugin repo https://github.com/dokku/dokku-postgres.git to /var/lib/dokku/plugins/available/postgres
+Cloning into 'postgres'...
+remote: Counting objects: 1225, done.
+remote: Compressing objects: 100% (8/8), done.
+remote: Total 1225 (delta 1), reused 5 (delta 1), pack-reused 1216
+Receiving objects: 100% (1225/1225), 264.35 KiB | 0 bytes/s, done.
+Resolving deltas: 100% (826/826), done.
+Checking connectivity... done.
+-----> Plugin postgres enabled
+Removed symlink /etc/systemd/system/docker.service.wants/dokku-redeploy.service.
+Created symlink from /etc/systemd/system/docker.service.wants/dokku-redeploy.service to /etc/systemd/system/dokku-redeploy.service.
+-----> Migrating zero downtime env variables to 0.5.x. The following variables have been deprecated
+=====> DOKKU_SKIP_ALL_CHECKS DOKKU_SKIP_DEFAULT_CHECKS
+=====> Please use dokku checks:[disable|enable] <app> to control zero downtime functionality
+=====> Migration complete
+=====>
+-----> Migrating zero downtime env variables to 0.6.x. The following variables will be migrated
+=====> DOKKU_CHECKS_ENABLED -> DOKKU_CHECKS_SKIPPED
+=====> Migration complete
+=====>
+Adding user dokku to group adm
+-----> Migrating DOKKU_NGINX env variables. The following variables will be migrated
+=====> DOKKU_NGINX_PORT -> DOKKU_PROXY_PORT
+=====> DOKKU_NGINX_SSL_PORT -> DOKKU_PROXY_SSL_PORT
+=====> Migration complete
+[ ok ] Starting nginx (via systemctl): nginx.service.
+10.2: Pulling from library/postgres
+3e731ddb7fc9: Pull complete
+6c47120e994b: Pull complete
+5f766d668e8a: Pull complete
+25131cac3889: Pull complete
+64d99bc5f521: Pull complete
+52f77b20404c: Pull complete
+f170bb6b5bb2: Pull complete
+13d81ba24d2f: Pull complete
+2a967418f27e: Pull complete
+e2be162d20ac: Pull complete
+8809054a7d3a: Pull complete
+330d4f0775cd: Pull complete
+ff84a9ce0acb: Pull complete
+Digest: sha256:7361bae1fbf5642099663d1f02dc949cabde1f86727bf8ff00d0a8806640a617
+Status: Downloaded newer image for postgres:10.2
+latest: Pulling from svendowideit/ambassador
+8f4ec95ceaee: Pull complete
+a3ed95caeb02: Pull complete
+61c250ee435e: Pull complete
+67e9eadbde8c: Pull complete
+Digest: sha256:bb60fceae45493a7ce17c19958a38caf8d5b6869958fc9c7f78885c75f1881cf
+Status: Downloaded newer image for svendowideit/ambassador:latest
+0.2: Pulling from dokkupaas/wait
+9dce7caf6169: Pull complete
+5b8e4c6b49c1: Pull complete
+e9ce726586a3: Pull complete
+Digest: sha256:a829d552e0e55c858b70a7d6f0e5bc9a5cc18b42bc8832271deaff3fed5fa212
+Status: Downloaded newer image for dokkupaas/wait:0.2
+0.8.0: Pulling from dokkupaas/s3backup
+019300c8a437: Pull complete
+1be93b9dcc6e: Pull complete
+072ed70e6b6e: Pull complete
+6e9810ddb7cd: Pull complete
+5002add25148: Pull complete
+c05b123fd5f0: Pull complete
+Digest: sha256:032ebf48626bddd422a88ae7e7675187b296a81488ec738f28c53dbf57f94788
+Status: Downloaded newer image for dokkupaas/s3backup:0.8.0
+latest: Pulling from library/busybox
+8c5a7da1afbc: Pull complete
+Digest: sha256:cb63aa0641a885f54de20f61d152187419e8f6b159ed11a251a09d115fdff9bd
+Status: Downloaded newer image for busybox:latest
+-----> Priming bash-completion cache
+```
+
+Next, create a postgres database and link it to our app:
+
+```sh
+# create a postgres service with the name vacay-pg
+dokku postgres:create vacay-pg
+
+       Waiting for container to be ready
+       Creating container database
+       Securing connection to database
+=====> Postgres container created: vacay-pg
+=====> Container Information
+       Config dir:          /var/lib/dokku/services/postgres/vacay-pg/config
+       Data dir:            /var/lib/dokku/services/postgres/vacay-pg/data
+       Dsn:                 postgres://postgres:73718a29bd63f3da1090239c9beab0d4@dokku-postgres-vacay-pg:5432/vacay_pg
+       Exposed ports:       -
+       Id:                  0f4d354ed0db575e52286853b96d030f405a16857f3ade1444c1a7bc102f78e3
+       Internal ip:         172.17.0.2
+       Links:               -
+       Service root:        /var/lib/dokku/services/postgres/vacay-pg
+       Status:              running
+       Version:             postgres:10.2
+```
+
+#### Linking backing services to applications
+
+Once the service creation is complete, set the `POSTGRES_URL` environment variable by linking the service.
+
+A PostgreSQL service can be linked to a container. This will use native docker links via the docker-options plugin. Here we link it to our 'vacay' app. NOTE: this will restart your app.
+
+```sh
+# on the Dokku host
+# each official datastore offers a `link` method to link a service to any application
+dokku postgres:link vacay-pg vacay
+
+-----> Setting config vars
+       DATABASE_URL:  postgres://postgres:73718a29bd63f3da1090239c9beab0d4@dokku-postgres-vacay-pg:5432/vacay_pg
+-----> Restarting app vacay
+ !     App vacay has not been deployed
+```
+
+Repeat the steps for Redis. Refer to the [official Redis plugin for Dokku](https://github.com/dokku/dokku-redis) docs.
+
+```sh
+sudo dokku plugin:install https://github.com/dokku/dokku-redis.git redis
+
+-----> Cloning plugin repo https://github.com/dokku/dokku-redis.git to /var/lib/dokku/plugins/available/redis
+Cloning into 'redis'...
+remote: Counting objects: 1255, done.
+remote: Compressing objects: 100% (8/8), done.
+remote: Total 1255 (delta 1), reused 5 (delta 1), pack-reused 1246
+Receiving objects: 100% (1255/1255), 258.30 KiB | 0 bytes/s, done.
+Resolving deltas: 100% (836/836), done.
+Checking connectivity... done.
+-----> Plugin redis enabled
+Removed symlink /etc/systemd/system/docker.service.wants/dokku-redeploy.service.
+Created symlink from /etc/systemd/system/docker.service.wants/dokku-redeploy.service to /etc/systemd/system/dokku-redeploy.service.
+-----> Migrating zero downtime env variables to 0.5.x. The following variables have been deprecated
+=====> DOKKU_SKIP_ALL_CHECKS DOKKU_SKIP_DEFAULT_CHECKS
+=====> Please use dokku checks:[disable|enable] <app> to control zero downtime functionality
+=====> Migration complete
+=====>
+-----> Migrating zero downtime env variables to 0.6.x. The following variables will be migrated
+=====> DOKKU_CHECKS_ENABLED -> DOKKU_CHECKS_SKIPPED
+=====> Migration complete
+=====>
+Adding user dokku to group adm
+-----> Migrating DOKKU_NGINX env variables. The following variables will be migrated
+=====> DOKKU_NGINX_PORT -> DOKKU_PROXY_PORT
+=====> DOKKU_NGINX_SSL_PORT -> DOKKU_PROXY_SSL_PORT
+=====> Migration complete
+[ ok ] Starting nginx (via systemctl): nginx.service.
+4.0.8: Pulling from library/redis
+b0568b191983: Pull complete
+6637dc5b29fe: Pull complete
+7b4314315f15: Pull complete
+67b22db27e51: Pull complete
+350dbcc91819: Pull complete
+eee5ee716895: Pull complete
+Digest: sha256:26c93c5b06eaa323bb1089500f42b0dd158138772348b865e364127f1d554982
+Status: Downloaded newer image for redis:4.0.8
+-----> Priming bash-completion cache
+```
+
+Create a Redis service named `red`
+
+```sh
+dokku redis:create red
+
+       Waiting for container to be ready
+=====> Redis container created: red
+=====> Container Information
+       Config dir:          /var/lib/dokku/services/redis/red/config
+       Data dir:            /var/lib/dokku/services/redis/red/data
+       Dsn:                 redis://red:267f61b8ef2b31decf5a631a29b3c62ada5303795b941a4a28fe60a0333ce434@dokku-redis-red:6379
+       Exposed ports:       -
+       Id:                  a77039d98efcfdc82ff05d49ddb7edea8e2c8d30c8334f643b18b799bc74c916
+       Internal ip:         172.17.0.3
+       Links:               -
+       Service root:        /var/lib/dokku/services/redis/red
+       Status:              running
+       Version:             redis:4.0.8
+```
+
+Link Redis service to our 'vacay' app container:
+
+```sh
+dokku redis:link red vacay
+
+-----> Setting config vars
+       REDIS_URL:  redis://red:267f61b8ef2b31decf5a631a29b3c62ada5303795b941a4a28fe60a0333ce434@dokku-redis-red:6379
+-----> Restarting app vacay
+ !     App vacay has not been deployed
+```
+
+Edit `ormconfig.json`. Modify `redis.ts` and `createTypeormConn.ts` to get the connection configuration from the environment variables, `REDIS_URL` and `DATABASE_URL`.
+
+Next, push our code, so take our Docker image and put it on Dokku. Here's how we do that—They have a docs on it called [Docker Image Tag Deployment](http://dokku.viewdocs.io/dokku~v0.12.11/deployment/methods/images/)
+
+> The Dokku tags plugin allows you to add docker image tags to the currently deployed app image for versioning and subsequent deployment.
+
+The stuff at the bottom (a more complete example using the method) of that page is the most helpful.
+
+```sh
+# build the image
+docker build -t cedrickchee/vacay-rental-app:1.0.0 .
+```
+
+After that, you want to put the image on Dokku host:
+
+Basically, what the below command trying to do is sending the image through SSH. I can't get this to work. So, what I do instead is I just use [Docker Hub](https://hub.docker.com/).
+
+```sh
+# copy the image to the dokku host
+# docker save dokku/test-app:v12 | bzip2 | ssh my.dokku.host "bunzip2 | docker load"
+```
+
+```sh
+$ docker login
+Login with your Docker ID to push and pull images from Docker Hub. If you don't have a Docker ID, head over to https://hub.docker.com to create one.
+Username:
+WARNING! Your password will be stored unencrypted in /home/cedric/.docker/config.json.
+Configure a credential helper to remove this warning. See
+https://docs.docker.com/engine/reference/commandline/login/#credentials-store
+
+Login Succeeded
+```
+
+Push image to Docker Hub:
+
+```sh
+docker push cedrickchee/vacay-rental-app:1.0.0
+
+The push refers to repository [docker.io/cedrickchee/vacay-rental-app]
+0de61a99e427: Pushed
+0f8a6683eebf: Pushed
+... ... ...
+e0eb4b156dd5: Pushed
+63be7469c1be: Pushed
+1d346e46d556: Mounted from library/node
+d8a71178df17: Mounted from library/node
+e492023cc4f9: Mounted from library/node
+cbda574aa37a: Mounted from library/node
+8451f9fe0016: Mounted from library/node
+858cd8541f7e: Mounted from library/node
+a42d312a03bb: Mounted from library/node
+dd1eb1fd7e08: Mounted from library/node
+1.0.0: digest: sha256:7d861e4c058479b8a6b90fc50294d282453ae7eac0008683aea8a302f5951738 size: 4298
+```
+
+```sh
+# In the Dokku host
+docker login
+sudo docker pull cedrickchee/vacay-rental-app:1.0.0
+1.0.0: Pulling from cedrickchee/vacay-rental-app
+
+d660b1f15b9b: Pull complete
+46dde23c37b3: Pull complete
+6ebaeb074589: Pull complete
+... ... ...
+c0711f8479e5: Pull complete
+f7268f23bbf6: Pull complete
+Digest: sha256:7d861e4c058479b8a6b90fc50294d282453ae7eac0008683aea8a302f5951738
+Status: Downloaded newer image for cedrickchee/vacay-rental-app:1.0.0
+```
+
+Tag and deploy the image:
+
+```sh
+# In the Dokku host
+sudo docker tag cedrickchee/vacay-rental-app:1.0.0 dokku/vacay:latest
+
+dokku tags:deploy vacay latest
+
+-----> Setting config vars
+       DOKKU_DOCKERFILE_PORTS:  4000/tcp
+-----> Releasing vacay (dokku/vacay:latest)...
+-----> Deploying vacay (dokku/vacay:latest)...
+-----> Attempting to run scripts.dokku.predeploy from app.json (if defined)
+-----> No Procfile found in app image
+-----> DOKKU_SCALE file not found in app image. Generating one based on Procfile...
+-----> New DOKKU_SCALE file generated
+=====> web=1
+-----> Attempting pre-flight checks
+       For more efficient zero downtime deployments, create a file CHECKS.
+       See http://dokku.viewdocs.io/dokku/deployment/zero-downtime-deploys/ for examples
+       CHECKS file not found in container: Running simple container check...
+-----> Waiting for 10 seconds ...
+-----> Default container check successful!
+-----> Running post-deploy
+-----> Creating new /home/dokku/vacay/VHOST...
+-----> Setting config vars
+       DOKKU_PROXY_PORT_MAP:  http:4000:4000
+-----> Configuring vacay.dokku.invictusbyte.com...(using built-in template)
+-----> Creating http nginx.conf
+-----> Running nginx-pre-reload
+       Reloading nginx
+-----> Setting config vars
+       DOKKU_APP_RESTORE:  1
+=====> Renaming container (22af459fd047) wizardly_nightingale to vacay.web.1
+-----> Attempting to run scripts.dokku.postdeploy from app.json (if defined)
+=====> Application deployed:
+       http://vacay.dokku.invictusbyte.com
+       http://vacay.dokku.invictusbyte.com:4000
+```
+
+[Proxy management](http://dokku.viewdocs.io/dokku~v0.12.11/networking/proxy-management/)—check Dokku port mappings:
+
+```sh
+dokku proxy:ports vacay
+
+-----> Port mappings for vacay
+-----> scheme             host port                 container port
+http                      4000                      4000
+
+# ...or
+dokku proxy:report vacay
+
+=====> vacay proxy information
+       Proxy enabled:                 true
+       Proxy type:                    nginx
+       Proxy port map:                http:4000:4000
+```
+
+[Proxy Port Management](http://dokku.viewdocs.io/dokku~v0.12.11/networking/port-management/).
+
+Add proxy port mappings for app:
+
+```sh
+dokku proxy:ports-add vacay http:80:4000
+
+-----> Setting config vars
+       DOKKU_PROXY_PORT_MAP:  http:4000:4000 http:80:4000
+-----> Configuring vacay.dokku.invictusbyte.com...(using built-in template)
+-----> Creating http nginx.conf
+-----> Running nginx-pre-reload
+       Reloading nginx
+```
+
+Open app URL in browser: http://vacay.dokku.invictusbyte.com/ You should see GraphiQL.
