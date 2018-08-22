@@ -868,3 +868,86 @@ dokku proxy:ports-add vacay http:80:4000
 ```
 
 Open app URL in browser: http://vacay.dokku.invictusbyte.com/ You should see GraphiQL.
+
+### Part 12 - Automating Dokku Deployment and Lerna
+
+We are going to fix the problem we are having with TypeORM in the previous part. The problem is in the `ormconfig.json`. There is no `src` folder at the `packages/server/dist` code. So, value for the `entities` attribute is invalid.
+
+```json
+[
+  {
+    "name": "production",
+    "type": "postgres",
+    "synchronize": true,
+    "logging": true,
+    "entities": ["src/entity/**/*.js"],
+    "migrations": ["src/migration/**/*.js"],
+    "subscribers": ["src/subscriber/**/*.js"],
+    "cli": {
+      "entitiesDir": "src/entity",
+      "migrationsDir": "src/migration",
+      "subscribersDir": "src/subscriber"
+    }
+  }
+]
+```
+
+Modify `packages/server/src/utils/createTypeormConn.ts`. Add new `entities` parameter into `createConnection` function:
+
+```javascript
+    ? createConnection({
+        ...connectionOptions,
+        url: process.env.DATABASE_URL,
+        entities: [User],
+        name: "default"
+      } as any)
+```
+
+Now, we are basically going to redeploy stuffs. We are going to automate that. To helps us automate that, we are using a tool called [Lerna](https://lernajs.io/). So, go ahead and install Lerna:
+
+```sh
+yarn global add lerna
+```
+
+Then, run:
+
+```sh
+# On the root directory
+lerna init
+```
+
+[Integrate Lerna with Yarn Workspaces](https://yarnpkg.com/blog/2017/08/02/introducing-workspaces/):
+
+So, now Lerna knows that we are using Yarn and we are also using Workspaces.
+
+Modify the root `package.json` and add build scripts:
+
+```json
+  "scripts": {
+    "build:server": "lerna run build --scope={@vacay/common,@vacay/server}"
+  },
+```
+
+Build our code:
+
+```sh
+yarn build:server
+
+yarn run v1.9.4
+$ lerna run build --scope={@vacay/common,@vacay/server}
+lerna notice cli v3.1.4
+lerna info filter [ '{@vacay/common,@vacay/server}' ]
+$ rimraf ./dist && tsc
+$ rimraf dist && tsc && copyfiles -u 1 src/**/*.graphql dist
+lerna success run Ran npm script 'build' in 2 packages:
+lerna success - @vacay/common
+lerna success - @vacay/server
+Done in 13.64s.
+```
+
+Next, we're going to create a script that will deploy everything. Create a new file on the root say `deploy_server_aws.sh`.
+
+```sh
+chmod +x deploy_server_aws.sh
+./deploy_server_aws.sh
+```
