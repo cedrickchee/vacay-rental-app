@@ -430,3 +430,63 @@ There are 62 parts in this series. It covers:
   ```sh
   yarn gen-types
   ```
+
+### Part 10 - How to put a Yarn Workspace in a Docker Image
+
+Today, we are going to work on deploying the server. Now, it's a little tricky to deploying applications using Yarn workspaces. The reason for that is we are using local packages.
+
+We are going to deploy the entire Yarn workspace. We are going to pretty much build the TypeScript code locally into JavaScript files, put that into a Docker image and then deploy that Docker image. So, we are going to set up the Docker image.
+
+#### Build scripts for server
+
+Add a script called "build" to my server.
+
+```json
+"scripts": {
+  // truncated
+  "build": "tsc"
+},
+```
+
+Some files like \*.graphql are missing in the generated `dist` directory. So, we need to move over these files. We don't want to do this manually. There's actually a package that we can use to helps us out called [`copyfiles`](https://github.com/calvinmetcalf/copyfiles).
+
+```sh
+yarn add -D copyfiles rimraf
+```
+
+```json
+"scripts": {
+  // truncated
+  "build": "rimraf dist && tsc && copyfiles -u 1 src/**/*.graphql dist"
+}
+```
+
+```sh
+yarn build
+```
+
+#### Docker container
+
+Next, we are going to install Docker and get an app into Docker container. Node.JS website has a nice tutorial on how to [set up Node.js app with Docker](https://nodejs.org/en/docs/guides/nodejs-docker-webapp/).
+
+In the next steps, we'll look at how you can run this app inside a Docker container using the official Docker image. First, you'll need to build a Docker image of your app.
+
+Create a Dockerfile.
+
+Then, create a `.dockerignore` file.
+
+Building your image:
+
+_Make sure you are in the root directory._
+
+```sh
+docker build -t cedrickchee/vacay-rental-app:1.0.0 .
+```
+
+Run the image:
+
+```sh
+docker run -p 3001:4000 --net="host" cedrickchee/vacay-rental-app:1.0.0
+```
+
+[Ways to debug a crashed Docker container](https://medium.com/@pimterry/5-ways-to-debug-an-exploding-docker-container-4f729e2c0aa8).
