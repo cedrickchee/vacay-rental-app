@@ -1244,3 +1244,30 @@ Some issues I encountered while trying to run our Expo app on the Android emulat
 
 - ["Uncaught Error: 20.0.0 is not a valid SDK version."](https://github.com/expo/expo/issues/568)
   - Solution: re-installing Expo on the emulator/device worked.
+
+### Part 16 - Adding GraphQL and Routing to React Native
+
+Packages that we will be using:
+
+- Apollo GraphQL
+- [React Native Elements](https://react-native-training.github.io/react-native-elements/) for UI
+  Install some packages for our mobile app:
+
+```sh
+yarn add react-router-native react-native-elements apollo-client apollo-cache-inmemory apollo-link-http graphql react-apollo graphql-tag
+yarn add -D @types/react-native-elements @types/react-router-native
+```
+
+Write code in app.
+
+Start Expo server (JS packager). Reload the Android app. Encountered error:
+"[01:12:44] /home/cedric/m/dev/work/repo/vacay-rental-app/node_modules/react-native-elements/src/index.js: Couldn't find preset "react-native" relative to directory "/home/cedric/m/dev/work/repo/vacay-rental-app/node_modules/react-native-elements""
+
+Whenever you see this type of error, at least when you have a Yarn Workspace set up, it's usually because of Yarn Workspace modules being in the wrong `node_modules`.
+To fix this, we need to no `nohoist` react-router-native in the root `package.json`. Then:
+
+```sh
+# In packages/app directory, kill these node_modules
+rm -rf node_modules/ ../../node_modules/
+yarn install
+```
