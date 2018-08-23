@@ -1185,3 +1185,62 @@ Finish off the deploy script that we've build. Then run:
 chmod +x deploy_web.sh
 ./deploy_web.sh
 ```
+
+### Part 15 - Setting up React Native with Expo
+
+We are going to set up the React Native app. We are using something called [Expo](https://expo.io/). This is a tool that helps you and makes things a little bit easier when dealing with React Native. We are going to be using Expo itself and not [Create Reactive Native App](https://github.com/react-community/create-react-native-app) (CRNA).
+
+Let's get started. You'll want to install Expo command line tools.
+
+```sh
+yarn add global expo-cli
+```
+
+Then, clone our [repository](https://github.com/benawad/typescript-yarn-workspace-example):
+
+```sh
+# In project root directory
+cd packages
+git clone https://github.com/benawad/typescript-yarn-workspace-example.git
+cd typescript-yarn-workspace-example
+git checkout 1_add_ts_rn
+
+Branch '1_add_ts_rn' set up to track remote branch '1_add_ts_rn' from 'origin'.
+Switched to a new branch '1_add_ts_rn'
+
+# Grab the app directory out of that
+mv packages/app/ ../app
+```
+
+The other thing is, we need to grab the 'noHoist' things from `packages/typescript-yarn-workspace-example/package.json` and move it to the root `package.json`. Then delete the `typescript-yarn-workspace-example` directory as we don't need it anymore.
+
+```sh
+cd ..
+rm -rf typescript-yarn-workspace-example
+
+# Get rid of yarn.lock in the app directory
+rm -rf app/yarn.lock
+```
+
+Next, install dependencies for our `app` package:
+
+```sh
+cd packages/app
+yarn install
+```
+
+Start iOS simulator or Android emulator. Then run the following commands:
+
+```sh
+# In app directory
+# Start Expo server
+yarn
+
+# Run our app on the emulator/device
+yarn run android
+```
+
+Some issues I encountered while trying to run our Expo app on the Android emulator:
+
+- ["Uncaught Error: 20.0.0 is not a valid SDK version."](https://github.com/expo/expo/issues/568)
+  - Solution: re-installing Expo on the emulator/device worked.
