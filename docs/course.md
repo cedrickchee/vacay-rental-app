@@ -951,3 +951,112 @@ Next, we're going to create a script that will deploy everything. Create a new f
 chmod +x deploy_server_aws.sh
 ./deploy_server_aws.sh
 ```
+
+### Part 13 - Deploying a Typescript Server to Heroku with Docker
+
+We are going to be deploying to [Heroku](https://heroku.com).
+
+In this step you’ll install the [Heroku Command Line Interface (CLI)](https://devcenter.heroku.com/articles/heroku-cli). You use the CLI to manage and scale your applications, provision add-ons, view your application logs, and run your application locally.
+
+I'm using Ubuntu 16.04. So, I run the following from my terminal:
+
+```sh
+sudo snap install --classic heroku
+```
+
+Then, follow the instructions there.
+
+```sh
+heroku login
+
+ ›   Warning: heroku update available from 7.7.4 to 7.12.1
+heroku: Enter your login credentials
+Email: <enter_your_email_address>
+Password: ******************************************************
+Two-factor code: ******
+Logged in as <enter_your_email_address>
+```
+
+Next up, follow this [guide](https://devcenter.heroku.com/articles/container-registry-and-runtime) here for deploying our Docker image.
+
+Log in to Container Registry:
+
+```sh
+heroku container:login
+Login Succeeded
+
+heroku create
+Creating app... done, ⬢ morning-ridge-37457
+https://morning-ridge-37457.herokuapp.com/ | https://git.heroku.com/morning-ridge-37457.git
+```
+
+Next, add [Heroku Add-Ons](https://elements.heroku.com/addons). Install [Postgres](https://elements.heroku.com/addons/heroku-postgresql) and [Redis](https://elements.heroku.com/addons/heroku-redis) add-ons.
+
+The next step is build the image and push to Container Registry. Before that, we need to change our code for "[unsupported Dockerfile commands](https://devcenter.heroku.com/articles/container-registry-and-runtime#unsupported-dockerfile-commands)"
+
+> EXPOSE - While EXPOSE can be used for local testing, it is not supported in Heroku's container runtime. Instead your web process/code should get the $PORT environment variable.
+
+So, change `startServer.ts` code:
+
+```javascript
+const port = process.env.PORT || 4000;
+const app = await server.start({
+  cors,
+  port: process.env.NODE_ENV === "test" ? 0 : port
+});
+```
+
+```sh
+# In deploy_server_aws.sh
+# heroku container:push web
+# heroku container:release web
+
+cd <roo_dir>
+
+./deploy_server_aws.sh
+
+yarn run v1.9.4
+$ lerna run build --scope={@vacay/common,@vacay/server}
+lerna notice cli v3.1.4
+lerna info filter [ '{@vacay/common,@vacay/server}' ]
+$ rimraf ./dist && tsc
+$ rimraf dist && tsc && copyfiles -u 1 src/**/*.graphql dist
+lerna success run Ran npm script 'build' in 2 packages:
+lerna success - @vacay/common
+lerna success - @vacay/server
+Done in 13.93s.
+=== Building web (/home/cedric/m/dev/work/repo/vacay-rental-app/Dockerfile)
+Sending build context to Docker daemon  171.5kB
+Step 1/16 : FROM node
+ ---> b064644cf368
+Step 2/16 : WORKDIR /vacay-rental-app
+ ---> Using cache
+ ---> 320056bb13bb
+Step 3/16 : COPY ./package.json .
+ ---> Using cache
+ ---> 2aac2647d82c
+... ... ...
+... ... ...
+Removing intermediate container 6468a8c1985e
+ ---> 7a9b1efea424
+Successfully built 7a9b1efea424
+Successfully tagged registry.heroku.com/morning-ridge-37457/web:latest
+=== Pushing web (/home/cedric/m/dev/work/repo/vacay-rental-app/Dockerfile)
+The push refers to repository [registry.heroku.com/morning-ridge-37457/web]
+a079918b9a67: Pushed
+a84d6579d8e0: Pushed
+3dc504a135a7: Pushed
+13e46e882102: Pushed
+... ... ...
+... ... ...
+858cd8541f7e: Pushed
+a42d312a03bb: Pushed
+dd1eb1fd7e08: Pushed
+latest: digest: sha256:ab679a0ad2de96de43abce4020680755acc924af3fe0cf81c0d90d68f13d3318 size: 4298
+Your image has been successfully pushed. You can now release it with the 'container:release' command.
+ ▸    heroku container:push no longer creates a release.
+ ▸    Run heroku container:release to create a release with this image.
+Releasing images web to morning-ridge-37457... done
+
+heroku open
+```
