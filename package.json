@@ -1,7 +1,8 @@
 {
   "private": true,
   "scripts": {
-    "build:server": "lerna run build --scope={@vacay/common,@vacay/server}"
+    "build:server": "lerna run build --scope={@vacay/common,@vacay/server}",
+    "build:web": "lerna run build --scope={@vacay/common,@vacay/web}"
   },
   "workspaces": {
     "packages": [
