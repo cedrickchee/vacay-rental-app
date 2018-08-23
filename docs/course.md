@@ -1060,3 +1060,128 @@ Releasing images web to morning-ridge-37457... done
 
 heroku open
 ```
+
+### Part 14 - Deploying a React App with Netlify
+
+We are going to deploy our React app to [Netlify](https://www.netlify.com/). This is my favourite places to deploy websites and front-ends to now just because they have such a great free plan and it's really easy to get up and running and they have so many features that are available to you. So, create an account with them and then also install the [command line tools](https://www.netlify.com/docs/cli/).
+
+I'm on a Linux workstation. So, I will be following the "[Direct Binary Install](https://github.com/netlify/netlifyctl/blob/master/README.md#direct-binary-install-linux-mac-windows)" method:
+
+```sh
+# run the following command to download and extract the binary file directly into the current directory in a Linux terminal
+cd ~/bin
+wget -qO- 'https://cli.netlify.com/download/latest/linux' | tar xz
+```
+
+Then, to use `netlifyctl` in that directory, you would use the relative path to the binary: `./netlifyctl`.
+
+Before we go ahead and deploy this to Netlify, we need to make a few changes to our front-end. The first is the `apollo.ts` file. Right now we have hard-coded what
+the server URL is.
+
+```javascript
+export const client = new ApolloClient({
+  link: new HttpLink({
+    uri: "http://localhost:4000",
+    credentials: "include"
+  }),
+  cache: new InMemoryCache()
+});
+```
+
+This works for development but when we're in production, we want this to be pointing at different server because it can't access localhost. So, we will make this into an environment variable:
+
+```javascript
+export const client = new ApolloClient({
+  link: new HttpLink({
+    uri: process.env.REACT_APP_SERVER_URL,
+    credentials: "include"
+  }),
+  cache: new InMemoryCache()
+});
+```
+
+Now, we need to set this environment variable `process.env.REACT_APP_SERVER_URL`. You may be wondering why I prefixed it with `REACT_APP_`, this is something from how `create-react-app` works. You can read more about "[Adding Custom Environment Variables](https://github.com/facebook/create-react-app/blob/master/packages/react-scripts/template/README.md#adding-custom-environment-variables)".
+
+For development environment, create `.env.development` file underneath `packages/web` directory.
+For production, create `.env.production` file.
+
+_Note that these two files are ok to share. It's not secret._
+
+So, we have that set up now. That will work. Our front-end is pretty much good to go. We don't have to touch anything else. We are going to create a script kind of how we did with the server to automate deployments. Create a `deploy_web.sh` file on root directory.
+
+Then, build web:
+
+```sh
+# In local and project root directory.
+yarn build:web
+
+yarn run v1.9.4
+$ lerna run build --scope={@vacay/common,@vacay/web}
+lerna notice cli v3.1.4
+lerna info filter [ '{@vacay/common,@vacay/web}' ]
+$ rimraf ./dist && tsc
+$ react-scripts-ts build
+Creating an optimized production build...
+Starting type checking and linting service...
+Using 1 worker with 2048MB memory limit
+ts-loader: Using typescript@2.9.2 and /home/cedric/m/dev/work/repo/vacay-rental-app/packages/web/tsconfig.prod.json
+Compiled successfully.
+
+File sizes after gzip:
+
+  442.34 KB  build/static/js/main.45d8f9ba.js
+  53.09 KB   build/static/css/main.2d09f83f.css
+
+The project was built assuming it is hosted at the server root.
+You can control this with the homepage field in your package.json.
+For example, add this to build it for GitHub Pages:
+
+  "homepage" : "http://myname.github.io/myapp",
+
+The build folder is ready to be deployed.
+You may serve it with a static server:
+
+  yarn global add serve
+  serve -s build
+
+Find out more about deployment here:
+
+  http://bit.ly/2vY88Kr
+
+lerna success run Ran npm script 'build' in 2 packages:
+lerna success - @vacay/common
+lerna success - @vacay/web
+Done in 76.29s.
+```
+
+Before we can even deploy this, we need to create an app on Netlify.
+
+Log in to Netlify to obtain access token using:
+
+```sh
+# In local and project root directory.
+# This will open a browser window, asking you to log in with Netlify and grant access to Netlify Cli.
+netlifyctl login
+```
+
+And finally, [deploy](https://github.com/netlify/netlifyctl/blob/master/README.md#manual-deploy) the static website using the following command:
+
+```sh
+netlifyctl deploy
+
+Create a new site? (yes/no) yes
+Site created  ✔
+What path would you like deployed? (default: .) ./packages/web/build
+Counting objects: 10 total objects  ✔
+Resolving deltas: 7 objects to upload  ✔
+Uploading objects: 7/7 done  ✔
+Deploy done  🌎
+    https://quizzical-neumann-ccba94.netlify.com
+```
+
+Finish off the deploy script that we've build. Then run:
+
+```sh
+chmod +x deploy_web.sh
+./deploy_web.sh
+```
