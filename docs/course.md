@@ -1312,3 +1312,66 @@ We will be doing 2 things today. The first is styling the RN register form a lit
 Now you haven't already, you want to go ahead and add the "@vacay/controller" to `packages/web/package.json` and run `yarn install`.
 
 Style register form component, `RegisterView.tsx`.
+
+### Part 19 - Generating Typescript Types with Apollo CLI
+
+We are going to start by fixing Apollo Codegen. They have upgraded and created a new thing called [Apollo CLI](https://github.com/apollographql/apollo-cli). You want to use this instead of Apollo Codegen for future things. So, we will be using this to add types.
+
+Install Apollo CLI globally:
+
+```sh
+yarn global add apollo
+```
+
+Also install it as a dev dependencies for my controller:
+
+```sh
+cd packages/controller
+yarn add -D apollo
+```
+
+Download the schema from your GraphQL endpoint. First, ensure you started your server by running `yarn start`.
+
+```sh
+apollo schema:download --endpoint=http://localhost:4000
+ ✔ Loading Apollo config
+ ✔ Fetching current schema
+ ✔ Saving schema to schema.json
+```
+
+Modify `controller/package.json` scripts:
+
+```json
+"scripts": {
+  // ... ... truncated ... ...
+  "schema:download": "apollo schema:download --endpoint=http://localhost:4000",
+  // ... ... truncated ... ...
+},
+```
+
+Now, I can just do:
+
+```sh
+yarn schema:download
+```
+
+Next thing is generate static types for GraphQL queries:
+
+```sh
+apollo codegen:generate --queries=./src/**/*.tsx --schema=./schema.json --target=typescript --outputFlat ./src/schemaTypes.ts
+ ✔ Loading Apollo config
+ ✔ Scanning for GraphQL queries (1 found)
+ ✔ Generating query files with 'typescript' target - wrote 1 files
+```
+
+```sh
+yarn codegen:generate
+yarn gen:types
+yarn refresh:types
+```
+
+Next, fix server tests. If you run `yarn test`, it will crash. Notice how we are running the test in the `dist` folder. We don't want to do that.
+
+We can specify the `rootDir` for Jest in `packages/server/package.json`. Now if you do `yarn test`, the test should pass now.
+
+Next, fix build scripts for web. In the root `package.json`, the `build:web` npm script should include `@vacay/controller`.
