@@ -1299,8 +1299,16 @@ Upgrade react native elements to use version 1.0.0-beta5:
 yarn add react-native-elements@1.0.0-beta5
 ```
 
-*Note that TypeScript types come bundled with that package now.*. So, make sure you also remove types for react native elements:
+_Note that TypeScript types come bundled with that package now._. So, make sure you also remove types for react native elements:
 
 ```sh
 yarn remove @types/react-native-elements
 ```
+
+### Part 18 - Styling React Native Register Form
+
+We will be doing 2 things today. The first is styling the RN register form a little bit and then next is calling the register function that we've build before, the register mutation.
+
+Now you haven't already, you want to go ahead and add the "@vacay/controller" to `packages/web/package.json` and run `yarn install`.
+
+Style register form component, `RegisterView.tsx`.
