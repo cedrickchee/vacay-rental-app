@@ -1271,3 +1271,36 @@ To fix this, we need to no `nohoist` react-router-native in the root `package.js
 rm -rf node_modules/ ../../node_modules/
 yarn install
 ```
+
+### Part 17 - How to use Formik with React Native
+
+We are building out the register form in React Native app. We need to install two dependencies for that.
+
+```json
+// add formik and @vacay/common packages
+"dependencies": {
+  "@vacay/common": "1.0.0",
+  "formik": "^0.11.11",
+  "graphql": "^0.13.2",
+  // ... ... truncted ... ...
+},
+```
+
+```sh
+cd packages/app
+
+# In packages/app directory
+yarn add formik
+```
+
+Upgrade react native elements to use version 1.0.0-beta5:
+
+```sh
+yarn add react-native-elements@1.0.0-beta5
+```
+
+*Note that TypeScript types come bundled with that package now.*. So, make sure you also remove types for react native elements:
+
+```sh
+yarn remove @types/react-native-elements
+```
